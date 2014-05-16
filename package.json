@@ -4,7 +4,7 @@
   "dependencies": {
     "speakingurl": ">=0.5.0",
     "handlebars": ">=0.0.1",
-    "async":">=0.0.1"
+    "async": ">=0.0.1"
   },
   "devDependencies": {
     "mocha": "*",
@@ -13,7 +13,7 @@
     "assert": ">=0.0.1",
     "mocha-jshint": ">=0.0.1",
     "mlcl_elastic": ">=0.6.2",
-    "mlcl_database": ">=0.0.1",
+    "mlcl_database": ">=0.0.1"
   },
   "scripts": {
     "test": "mocha -R spec"
