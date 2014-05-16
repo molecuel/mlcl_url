@@ -1,0 +1,21 @@
+{
+  "name": "mlcl_url",
+  "version": "0.1.0",
+  "dependencies": {
+    "speakingurl": ">=0.5.0",
+    "handlebars": ">=0.0.1"
+  },
+  "devDependencies": {
+    "mocha": "*",
+    "should": ">= 0.0.1",
+    "supertest": ">=0.0.1",
+    "assert": ">=0.0.1",
+    "mocha-jshint": ">=0.0.1",
+    "mlcl_elastic": ">=0.6.2",
+    "mlcl_database": ">=0.0.1"
+  },
+  "scripts": {
+    "test": "node_modules/.bin/mocha -R List"
+  },
+  "description": "This is the url generator for the molecuel cms"
+}
