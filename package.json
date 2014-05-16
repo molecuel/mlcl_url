@@ -15,7 +15,7 @@
     "mlcl_database": ">=0.0.1"
   },
   "scripts": {
-    "test": "mocha -R List"
+    "test": "mocha -R spec"
   },
   "description": "This is the url generator for the molecuel cms",
   "main": "index.js",
