@@ -17,6 +17,7 @@ describe('url', function(){
   var elastic;
   var simplepattern;
   var advancedpattern;
+  var filetestpattern;
 
   before(function (done) {
     mlcl = function() {
@@ -38,7 +39,7 @@ describe('url', function(){
     molecuel.config.url = {
       pattern: {
         default: '{{t title}}',
-        file: '{{t file}}/{{t filename}}',
+        file: '{{t file}}/{{f filename}}',
         news: 'news/{{t title}}'
       }
     };
@@ -46,9 +47,10 @@ describe('url', function(){
     elastic = mlcl_elastic(molecuel);
     simplepattern = '{{t title}}';
     advancedpattern = 'content/{{t _id}}/{{t title}}';
+    filetestpattern = 'file/{{f title}}';
     mytestobject = {
       _id: 'f8f8asdf9afsdsafa9',
-      title: 'Test?! ""- Die süße Hündin läuft in die Höhle des Bären und aß ein стейк'
+      title: 'Test?! ""- Die süße Hündin läuft in die Höhle des Bären und aß ein.стейк'
     };
     done();
   });
@@ -90,6 +92,18 @@ describe('url', function(){
         // check for string length
         assert(result.length > 2);
         assert(result === 'content/f8f8asdf9afsdsafa9/test-die-suesse-huendin-laeuft-in-die-hoehle-des-baeren-und-ass-ein-stejk');
+        done();
+      });
+    });
+
+    it('should create a valid url from test file pattern', function(done) {
+      u.generateUrlFromPattern(filetestpattern, mytestobject, function(err, result) {
+        result.should.be.an.String;
+        // check for whitespaces
+        result.should.not.match('/^s*$/');
+        // check for string length
+        assert(result.length > 2);
+        assert(result === 'file/test-die-suesse-huendin-laeuft-in-die-hoehle-des-baeren-und-ass-ein.stejk');
         done();
       });
     });

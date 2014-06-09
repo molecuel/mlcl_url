@@ -143,6 +143,24 @@ url.prototype.generateUrlFromPattern = function generateUrlFromPattern(pattern, 
       return '';
     }
   });
+
+  // preserve the dot for files
+  handlebars.registerHelper('f', function(string) {
+    if(string) {
+      return slug(string, {
+        custom: {
+          '!': '-',
+          '~': '-',
+          '*': '-',
+          '\'': '-',
+          '(", ")': '-'
+        },
+        mark: true
+      });
+    } else {
+      return '';
+    }
+  });
   var template = handlebars.compile(pattern);
   var result = template(myurlobject);
 
