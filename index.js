@@ -31,7 +31,7 @@ var url = function url() {
  */
 url.prototype._pluginDefintion = function _pluginDefintion (schema, options) {
   schema.add({
-    url: {type: String, required: false}
+    url: {type: String, required: false, elastic: {mapping: {type: 'string', index: 'not_analyzed'}}}
   });
 
   /**
