@@ -36,10 +36,10 @@ var url = function url() {
    * Add plugin to the created models
    */
   molecuel.on('mlcl::elements::registerSchema:post', function(elements, schemaname, modelRegistryElement) {
-    var modelConfig = modelRegistryElement.config;
+    var options = modelRegistryElement.options;
     var model =  modelRegistryElement.schema;
     // check if the schema configuration avoids url creation.
-    if(modelConfig && !modelConfig.avoidUrl) {
+    if(options && !options.avoidUrl) {
       model.plugin(self._pluginDefintion, {modelname: schemaname, urlhandler: self});
     }
   });
