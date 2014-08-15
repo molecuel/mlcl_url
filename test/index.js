@@ -7,6 +7,7 @@ var assert = require('assert'),
   EventEmitter = require('events').EventEmitter,
   should = require('should'),
   mlcl_database = require('mlcl_database'),
+  mlcl_elements = require('mlcl_elements'),
   mlcl_elastic = require('mlcl_elastic');
 
 describe('url', function(){
@@ -35,6 +36,11 @@ describe('url', function(){
       type: 'mongodb',
       uri: 'mongodb://localhost/mlcl-url-unit'
     };
+
+    molecuel.config.elements = {
+      schemaDir: __dirname + '/definitions'
+    };
+
     molecuel.config.url = {
       pattern: {
         default: '{{t title}}',
@@ -113,6 +119,7 @@ describe('url', function(){
     var dbcon;
     var testmodel;
     var fakeelements;
+    var elements;
     var u;
 
     before(function(){
@@ -140,6 +147,28 @@ describe('url', function(){
         done();
       });
       molecuel.emit('mlcl::core::init:post', molecuel);
+    });
+
+    it('should construct elements module', function(done) {
+      molecuel.once('mlcl::elements::init:pre', function(module) {
+        module.should.be.a.object;
+        done();
+      });
+      elements = new mlcl_elements(molecuel);
+    });
+
+    it('should finalize elements registrations', function(done) {
+      molecuel.once('mlcl::elements::init:post', function(module) {
+        module.should.be.a.object;
+        done();
+      });
+      molecuel.emit('mlcl::database::connection:success', dbcon);
+      molecuel.emit('mlcl::search::connection:success', searchcon);
+    });
+
+    it('should have registered url model', function(done) {
+      assert('function' === typeof elements.modelRegistry['url']);
+      done();
     });
 
     it('should initialize schema plugin', function(done) {

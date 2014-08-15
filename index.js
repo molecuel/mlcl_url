@@ -11,6 +11,27 @@ var async = require('async');
 
 var url = function url() {
   var self = this;
+
+  molecuel.on('mlcl::elements::registrations:pre', function(elements) {
+    self.elements = elements;
+    self.urlSchema = {
+      url: {type: String, list: true, required: true},
+      lang: {type: String},
+      type: {type: String, default: 'elements'},
+      targetid: {type: elements.ObjectId},
+      targeturl: {type: String}
+    };
+
+    var schemaDefinition = {
+      schemaName: 'url',
+      schema: self.urlSchema,
+      options: {indexable: true, avoidTranslate: true, avoidUrl: true},
+      indexes: [
+        [{url: 1, lang: 1},{unique: true}]
+      ]
+    };
+    elements.registerSchemaDefinition(schemaDefinition);
+  });
   /**
    * Add plugin to the created models
    */
