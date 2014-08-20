@@ -300,12 +300,12 @@ url.prototype._pluginDefintion = function _pluginDefintion (schema, options) {
           if(err) {
             // there was an eror while searching for the url
             next(err);
-          } else if(res && res._id === self._id ) {
+          } else if(res && res.targetId === self._id ) {
             // it's the own url
             next();
           } else {
             // the url is used by another element
-            next(new Error('URL is already in use by ' + res._id));
+            next(new Error('URL is already in use by ' + res.targetId));
           }
         }
       });
