@@ -16,34 +16,169 @@ var url = function url() {
     self.elements = elements;
     self.urlSchema = {
       url: {type: String, list: true, required: true},
-      lang: {type: String},
+      lang: {type: String, required: true},
       type: {type: String, default: 'elements'},
       targetid: {type: elements.ObjectId},
-      targeturl: {type: String}
+      targeturl: {type: String},
+      status: {type: String, default: 'active'}
     };
 
     var schemaDefinition = {
       schemaName: 'url',
       schema: self.urlSchema,
-      options: {indexable: true, avoidTranslate: true, avoidUrl: true},
+      options: {indexable: false, avoidTranslate: true, avoidUrl: true},
       indexes: [
-        [{url: 1, lang: 1},{unique: true}]
+        [{url: 1, lang: 1, status: 1},{unique: true}]
       ]
     };
     elements.registerSchemaDefinition(schemaDefinition);
   });
+
+  /**
+  * url findByUrl function
+  */
+  molecuel.on('mlcl::elements::setElementType:post::url', function( elements, model) {
+    self.findByUrl = self._findByUrl(model);
+    elements.findByUrl = self._findByUrl(model);
+    self.createUrlEntry = self._createUrlEntry(model);
+    elements.createUrlEntry = self._createUrlEntry(model);
+    self.deleteUrlsById = self._deleteUrlsById(model);
+    elements.deleteUrlsById = self._deleteUrlsById(model);
+    self.deleteUrlsByUrl = self._deleteUrlsByUrl(model);
+    elements.deleteUrlsByUrl = self._deleteUrlsByUrl(model);
+    self.deleteUrlsByTargetUrl = self._deleteUrlsByTargetUrl(model);
+    elements.deleteUrlsByTargetUrl = self._deleteUrlsByTargetUrl(model);
+  });
+
+  molecuel.on('mlcl::elements::setElementType:post', function(elements, name, model) {
+    if(name !== 'url') {
+      model.registerSaveHandler(self.saveHandler);
+    }
+  });
+
   /**
    * Add plugin to the created models
    */
   molecuel.on('mlcl::elements::registerSchema:post', function(elements, schemaname, modelRegistryElement) {
-    var options = modelRegistryElement.options;
-    var model =  modelRegistryElement.schema;
-    // check if the schema configuration avoids url creation.
-    if(options && !options.avoidUrl) {
-      model.plugin(self._pluginDefintion, {modelname: schemaname, urlhandler: self});
+    if(schemaname !== 'url') {
+      var options = modelRegistryElement.options;
+      var model =  modelRegistryElement.schema;
+      // check if the schema configuration avoids url creation.
+      if(options && !options.avoidUrl) {
+        model.plugin(self._pluginDefintion, {modelname: schemaname, urlhandler: self});
+      }
     }
   });
+
 };
+
+/*************************************************************************
+ SINGLETON CLASS DEFINITION
+*************************************************************************/
+var instance = null;
+
+var getInstance = function(){
+  return instance || (instance = new url());
+};
+
+
+/**
+ * _findByUrl - Returns the function which finds the correct object for the url
+ *
+ * @param  {object} model This is the url model
+ * @return {function}     The find function based on the model
+ */
+url.prototype._findByUrl = function _findByUrl(model) {
+  return function(url, lang, callback) {
+    model.findOne(
+      {
+        url: url,
+        '$or': [
+          {lang: lang},
+          {$exists: {lang: false}}
+        ]
+      }, callback);
+  };
+};
+
+
+/**
+ * _createUrlEntry - Creates a new url entry
+ *
+ * @param  {object} model The url model
+ * @return {function}     The function which creates new url entries
+ */
+url.prototype._createUrlEntry = function _createUrlEntry(model) {
+  return function(entry, callback) {
+    var urlentry = new model({
+      url: entry.url,
+      lang: entry.lang,
+      targetid: entry._id,
+    });
+
+    urlentry.save(function(err, result) {
+      if(err) {
+        molecuel.log.error('mlcl_url','Error while creating url' + err);
+      }
+      callback(err, result);
+    });
+  };
+};
+
+
+/**
+ * _deleteUrlsById - Deletes all urls found for a target id.
+ *
+ * This should be used if a new element fails to be saved
+ *
+ * @param  {object} model the url model
+ * @return {function}     returns the remove functions
+ */
+url.prototype._deleteUrlsById = function _deleteUrlsById(model) {
+  return function(entry, callback) {
+    model.remove({targetid: entry._id}, function(err) {
+      if(err) {
+        molecuel.log.error('mlcl_url','Error while deleting url' + err);
+      }
+      callback(err);
+    });
+  };
+};
+
+/**
+ * _deleteUrlsByUrl - Deletes all entries found by url and language from mongodb
+ *
+ * @param  {object} model the url model
+ * @return {function}     returns the remove functions
+ */
+url.prototype._deleteUrlsByUrl = function _deleteUrlsByUrl(model) {
+  return function(entry, callback) {
+    model.remove({url: entry.url, lang: model.lang}, function(err) {
+      if(err) {
+        molecuel.log.error('mlcl_url','Error while deleting url' + err);
+      }
+      callback(err);
+    });
+  };
+};
+
+ /**
+  * _deleteUrlsByTargetUrl - Deletes all entries found with the target url from mongodb
+  *
+  * @param  {object} model The model to initialize the function
+  * @return {function} returns the remove function
+  */
+url.prototype._deleteUrlsByTargetUrl = function _deleteUrlsByTargetUrl(model) {
+  return function(entry, callback) {
+    model.remove({targeturl: entry.targeturl}, function(err) {
+      if(err) {
+        molecuel.log.error('mlcl_url','Error while deleting url' + err);
+      }
+      callback(err);
+    });
+  };
+};
+
 
 /**
  * Return the definition of the plugin
@@ -57,6 +192,8 @@ url.prototype._pluginDefintion = function _pluginDefintion (schema, options) {
 
   /**
    * emit event when url has been changed
+   *
+   * @todo handle rewrites here
    */
   schema.path('url').set(function(newval) {
     if(this.url !== newval)  {
@@ -67,51 +204,70 @@ url.prototype._pluginDefintion = function _pluginDefintion (schema, options) {
   });
 
   /**
-   * pre validation function to create a url if it does not exist yet
+   * anonymous function - pre validation function to create a url if it does not exist yet
+   *
+   * @param  {function} next callback function can ship error if error is added as parameter
+   * @return {function}      the callback should not return a error to succeed
    */
-  schema.pre('validate', function (next) {
+  schema.pre('save', function (next) {
     var self = this;
     var url = options.urlhandler;
     if(!this.url) {
       url.generateUrl(options.modelname, this, function(err, result) {
         if(!err) {
-          self.searchByUrl(result, self.lang, function(err, res) {
-            if(res && res.hits) {
-              if(res.hits.total === 0) {
+          url.findByUrl(result, self.lang, function(err, res) {
+            if(!err) {
+              // check if there is already a url
+              if(!res) {
                 self.url = result;
-                next();
-              } else if (res.hits.total === 1 && res.hits.hits[0]._id === self._id){
-                self.url = result;
-                next();
-              } else if(res.hits.total >= 1 && res.hits.hits[0]._id !== self._id ) {
-                var total = res.hits.total;
-                var count = 0;
-                var myurl;
-                async.whilst(
-                  function() {
-                    return total >=1;
-                  },
-                  function(callback) {
-                    myurl = result + '-' + count;
-                    self.searchByUrl(myurl, self.lang, function(err, res) {
-                      if (res.hits.total === 1 && res.hits.hits[0]._id.toString() === self._id.toString()){
-                        self.url = myurl;
-                        next();
-                      }
-                      total = res.hits.total;
-                      count = count + 1;
-                      callback();
-                    });
-                  },
-                  function() {
-                    self.url = myurl;
+                url.createUrlEntry(self, function(err) {
+                  if(err) {
+                    next(err);
+                  } else {
                     next();
                   }
-                );
+                });
+              } else {
+                // check if i found myself
+                if(res._id === self._id) {
+                  next();
+                } else {
+                  var total = 1;
+                  var count = 0;
+                  var myurl;
+                  async.whilst(
+                    function() {
+                      return total >=1;
+                    },
+                    function(callback) {
+                      myurl = result + '-' + count;
+                      url.findByUrl(myurl, self.lang, function(err, res) {
+                        if(!res) {
+                          self.url = myurl;
+                          total = 0;
+                          callback();
+                        } else {
+                          total = 1;
+                          count = count + 1;
+                          callback();
+                        }
+                      });
+                    },
+                    function() {
+                      self.url = myurl;
+                      url.createUrlEntry(self, function(err) {
+                        if(err) {
+                          next(err);
+                        } else {
+                          next();
+                        }
+                      });
+                    }
+                  );
+                }
               }
             } else {
-              self.url = result;
-              next();
+              next(err);
             }
           });
         } else {
@@ -123,8 +279,36 @@ url.prototype._pluginDefintion = function _pluginDefintion (schema, options) {
     }
   });
 
+  schema.pre('save', function(next) {
+    if(this.isNew) {
+      this.wasNew = true;
+    }
+    next();
+  });
+
   if (options && options.index) {
     schema.path('url').index(options.index);
+  }
+};
+
+/**
+ * Save handler for mongoose which will be executed before the callback function returns
+ * @param err
+ * @param result
+ * @param options
+ * @param callback
+ **/
+url.prototype.saveHandler = function(err, result, options, callback) {
+  var url = getInstance();
+  if(err && options.isNew) {
+    url.deleteUrlsById(result, function(err, res) {
+      if(err) {
+        molecuel.log('mlcl_url', 'Error while deleteing url after save error for ' + res._id + ' message: s'+ err);
+      }
+      callback();
+    });
+  } else {
+    callback();
   }
 };
 
@@ -194,7 +378,7 @@ url.prototype.generateUrlFromPattern = function generateUrlFromPattern(pattern, 
 
 var init = function(mlcl) {
   molecuel = mlcl;
-  return new url();
+  return getInstance();
 };
 
 module.exports = init;

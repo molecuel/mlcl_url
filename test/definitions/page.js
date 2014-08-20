@@ -12,6 +12,7 @@ var definition = function() {
   };
   this.schema = {
     title: {type: String, required: true},
+    keyword: {type: String, required: true},
     body: {type: String},
     url: {type: String},
     lang: {type: String},

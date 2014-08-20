@@ -48,6 +48,12 @@ describe('url', function(){
         news: 'news/{{t title}}'
       }
     };
+
+    molecuel.config.log = {
+      ttl: '4w',
+      overwriteConsole: false
+    };
+
     mongo = mlcl_database(molecuel);
     elastic = mlcl_elastic(molecuel);
     simplepattern = '{{t title}}';
@@ -117,7 +123,6 @@ describe('url', function(){
   describe('molecuel url generate', function() {
     var searchcon;
     var dbcon;
-    var testmodel;
     var fakeelements;
     var elements;
     var u;
@@ -171,35 +176,90 @@ describe('url', function(){
       done();
     });
 
-    it('should initialize schema plugin', function(done) {
-      var Schema = dbcon.database.Schema;
-      var testSchema = new Schema({
-        title: {type: String}
-      });
-
-      var registryElement= {
-        schema: testSchema,
-        config: {indexable: true}
-      };
-
-      molecuel.emit('mlcl::elements::registerSchema:post', fakeelements, 'test', registryElement);
-      testmodel = dbcon.registerModel('test', testSchema, {indexable:true});
-      testmodel.schema.paths.url.should.be.a.Object;
-      done();
-    });
-    it('should generate a new url', function(done) {
-      var testobject = new testmodel({title: 'testname'});
-      testobject.save(function(err) {
+    it('should have the findByUrl function available', function(done) {
+      elements.findByUrl('testUrl', 'en', function(err) {
         should.not.exist(err);
-      });
-      molecuel.on('mlcl::url::changedurl', function() {
         done();
       });
+    });
+
+    var testobject;
+    it('should generate url for a object', function(done) {
+      var testmodel = elements.getElementType('page');
+      testobject = new testmodel({
+        title: 'testname',
+        lang: 'en',
+        keyword: 'test'
+      });
+      testobject.save(function(err) {
+        should.not.exist(err);
+        testobject.url.should.be.a.string;
+        done();
+      });
+    });
+
+    it('should save the url in the url mongo collection', function(done) {
+      elements.findByUrl(testobject.url, testobject.lang, function(err, result) {
+        should.not.exists(err);
+        result.should.be.a.object;
+      });
+      done();
+    });
+
+    var testobject2;
+    it('should generate url for a second object whicht should be differnt', function(done) {
+      var testmodel = elements.getElementType('page');
+      testobject2 = new testmodel({
+        title: 'testname',
+        lang: 'en',
+        keyword: 'test'
+      });
+
+      testobject2.save(function(err) {
+        should.not.exist(err);
+        testobject2.url.should.be.a.string;
+        assert(testobject2.url !== testobject.url);
+        done();
+      });
+    });
+
+    it('should save the url in the url mongo collection', function(done) {
+      elements.findByUrl(testobject2.url, testobject2.lang, function(err, result) {
+        should.not.exists(err);
+        result.should.be.a.object;
+      });
+      done();
+    });
+
+    var testobject3;
+    it('should fail to save', function(done) {
+      var testmodel = elements.getElementType('page');
+      testobject3 = new testmodel({
+        title: 'test2name',
+        lang: 'en'
+      });
+
+      testobject3.save(function(err) {
+        should.exist(err);
+        done();
+      });
+    });
+
+    it('should have removed the url from the mongo collection', function(done) {
+      elements.findByUrl(testobject3.url, testobject3.lang, function(err, result) {
+        should.not.exists(err);
+        should.not.exists(result);
+      });
+      done();
     });
 
     after(function(done) {
-      searchcon.deleteIndex('*', function() {
-        done();
+      elements.database.database.connection.db.dropDatabase(function(error) {
+        should.not.exists(error);
+        elements.elastic.deleteIndex('*', function(error) {
+          should.not.exists(error);
+          done();
+        });
       });
     });
   });
