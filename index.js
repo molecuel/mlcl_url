@@ -8,11 +8,13 @@ var molecuel;
 var slug = require('speakingurl');
 var handlebars = require('handlebars');
 var async = require('async');
+var debug = require('debug')('mlcl_url');
 
 var url = function url() {
   var self = this;
 
   molecuel.on('mlcl::elements::registrations:pre', function(elements) {
+    debug('registering url schema');
     self.elements = elements;
     self.urlSchema = {
       url: {type: String, list: true, required: true},
@@ -38,6 +40,7 @@ var url = function url() {
   * url findByUrl function
   */
   molecuel.on('mlcl::elements::setElementType:post::url', function( elements, model) {
+    debug('registering functions for url schema');
     self.findByUrl = self._findByUrl(model);
     elements.findByUrl = self._findByUrl(model);
     self.createUrlEntry = self._createUrlEntry(model);
@@ -52,6 +55,7 @@ var url = function url() {
 
   molecuel.on('mlcl::elements::setElementType:post', function(elements, name, model) {
     if(name !== 'url') {
+      debug('register save handler for %s', name);
       model.registerSaveHandler(self.saveHandler);
     }
   });
@@ -65,6 +69,7 @@ var url = function url() {
       var model =  modelRegistryElement.schema;
       // check if the schema configuration avoids url creation.
       if(options && !options.avoidUrl) {
+        debug('registering url plugin for %s', schemaname);
         model.plugin(self._pluginDefintion, {modelname: schemaname, urlhandler: self});
       }
     }
@@ -90,6 +95,7 @@ var getInstance = function(){
  */
 url.prototype._findByUrl = function _findByUrl(model) {
   return function(url, lang, callback) {
+    debug('find url %s with lang %s', url, lang);
     model.findOne(
       {
         url: url,
@@ -116,6 +122,8 @@ url.prototype._createUrlEntry = function _createUrlEntry(model) {
       targetid: entry._id,
     });
 
+    debug('create new mongodb url entry %s for _id: %s', urlentry.url, urlentry._id);
+
     urlentry.save(function(err, result) {
       if(err) {
         molecuel.log.error('mlcl_url','Error while creating url' + err);
@@ -136,6 +144,7 @@ url.prototype._createUrlEntry = function _createUrlEntry(model) {
  */
 url.prototype._deleteUrlsById = function _deleteUrlsById(model) {
   return function(entry, callback) {
+    debug('delete url by _id %s', entry._id);
     model.remove({targetid: entry._id}, function(err) {
       if(err) {
         molecuel.log.error('mlcl_url','Error while deleting url' + err);
@@ -187,7 +196,7 @@ url.prototype._deleteUrlsByTargetUrl = function _deleteUrlsByTargetUrl(model) {
  */
 url.prototype._pluginDefintion = function _pluginDefintion (schema, options) {
   schema.add({
-    url: {type: String, required: false, elastic: {mapping: {type: 'string', index: 'not_analyzed'}}}
+    url: {type: String, required: true, elastic: {mapping: {type: 'string', index: 'not_analyzed'}}}
   });
 
   /**
@@ -209,7 +218,7 @@ url.prototype._pluginDefintion = function _pluginDefintion (schema, options) {
    * @param  {function} next callback function can ship error if error is added as parameter
    * @return {function}      the callback should not return a error to succeed
    */
-  schema.pre('save', function (next) {
+  schema.pre('validate', function (next) {
     var self = this;
     var url = options.urlhandler;
     if(!this.url) {
@@ -275,7 +284,31 @@ url.prototype._pluginDefintion = function _pluginDefintion (schema, options) {
         }
       });
     } else {
-      next();
+      // if the url has been set manually
+      url.findByUrl(this.url, self.lang, function(err, res) {
+        if(!err && !res) {
+          url.createUrlEntry(self, function(err) {
+            if(err) {
+              // there was a error creating a new url
+              next(err);
+            } else {
+              // url has been created
+              next();
+            }
+          });
+        } else {
+          if(err) {
+            // there was an eror while searching for the url
+            next(err);
+          } else if(res && res._id === self._id ) {
+            // it's the own url
+            next();
+          } else {
+            // the url is used by another element
+            next(new Error('URL is already in use by ' + res._id));
+          }
+        }
+      });
     }
   });
 
@@ -300,8 +333,10 @@ url.prototype._pluginDefintion = function _pluginDefintion (schema, options) {
  **/
 url.prototype.saveHandler = function(err, result, options, callback) {
   var url = getInstance();
+  debug('executing save handler for %s', options.doc._id);
   if(err && options.isNew) {
-    url.deleteUrlsById(result, function(err, res) {
+    debug('error occured remove url for %s', options.doc);
+    url.deleteUrlsById(options.doc, function(err, res) {
       if(err) {
         molecuel.log('mlcl_url', 'Error while deleteing url after save error for ' + res._id + ' message: s'+ err);
       }

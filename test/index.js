@@ -191,7 +191,7 @@ describe('url', function(){
         lang: 'en',
         keyword: 'test'
       });
-      testobject.save(function(err) {
+      elements.save(testobject, function(err) {
         should.not.exist(err);
         testobject.url.should.be.a.string;
         done();
@@ -215,7 +215,7 @@ describe('url', function(){
         keyword: 'test'
       });
 
-      testobject2.save(function(err) {
+      elements.save(testobject2, function(err) {
         should.not.exist(err);
         testobject2.url.should.be.a.string;
         assert(testobject2.url !== testobject.url);
@@ -239,7 +239,7 @@ describe('url', function(){
         lang: 'en'
       });
 
-      testobject3.save(function(err) {
+      elements.save(testobject3, function(err) {
         should.exist(err);
         done();
       });
@@ -251,6 +251,22 @@ describe('url', function(){
         should.not.exists(result);
       });
       done();
+    });
+
+    var testobject4;
+    it('should fail for a object with duplicated url', function(done) {
+      var testmodel = elements.getElementType('page');
+      testobject4 = new testmodel({
+        title: 'testname',
+        url: 'testname',
+        lang: 'en',
+        keyword: 'test'
+      });
+
+      elements.save(testobject4, function(err) {
+        should.exist(err);
+        done();
+      });
     });
 
     after(function(done) {

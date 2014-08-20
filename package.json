@@ -1,10 +1,11 @@
 {
   "name": "mlcl_url",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "dependencies": {
     "speakingurl": ">=0.5.0",
     "handlebars": ">=0.0.1",
-    "async": ">=0.0.1"
+    "async": ">=0.0.1",
+    "debug": ">=0.0.1"
   },
   "devDependencies": {
     "mocha": "*",
