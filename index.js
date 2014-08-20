@@ -300,7 +300,7 @@ url.prototype._pluginDefintion = function _pluginDefintion (schema, options) {
           if(err) {
             // there was an eror while searching for the url
             next(err);
-          } else if(res && res.targetId === self._id ) {
+          } else if(res && res.targetid.toString() === self._id.toString() ) {
             // it's the own url
             next();
           } else {
