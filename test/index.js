@@ -183,6 +183,13 @@ describe('url', function(){
       });
     });
 
+    it('should wait a second', function(done) {
+      // Add timeout after saving to give elasticsearch some time to index
+      setTimeout(function() {
+        done();
+      }, 1000);
+    });
+
     var testobject;
     it('should generate url for a object', function(done) {
       var testmodel = elements.getElementType('page');
