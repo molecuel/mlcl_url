@@ -101,7 +101,7 @@ url.prototype._findByUrl = function _findByUrl(model) {
         url: url,
         '$or': [
           {lang: lang},
-          {$exists: {lang: false}}
+          {lang: {$exists: false}}
         ]
       }, callback);
   };
