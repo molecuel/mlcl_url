@@ -18,7 +18,7 @@ var url = function url() {
     self.elements = elements;
     self.urlSchema = {
       url: {type: String, list: true, required: true},
-      lang: {type: String, required: true},
+      lang: {type: String, required: false},
       type: {type: String, default: 'elements'},
       targetid: {type: elements.ObjectId},
       targeturl: {type: String},
