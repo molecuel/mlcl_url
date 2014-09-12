@@ -378,6 +378,9 @@ url.prototype.generateUrl = function generateUrl(type, object, callback) {
 url.prototype.generateUrlFromPattern = function generateUrlFromPattern(pattern, myurlobject, callback) {
   handlebars.registerHelper('t', function(string) {
     if(string) {
+      if('string' !== typeof string && typeof string.toString == 'function') {
+        string = string.toString();
+      }
       return slug(string);
     } else {
       return '';

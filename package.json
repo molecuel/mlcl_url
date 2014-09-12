@@ -1,6 +1,6 @@
 {
   "name": "mlcl_url",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "dependencies": {
     "speakingurl": ">=0.5.0",
     "handlebars": ">=0.0.1",
