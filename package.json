@@ -14,7 +14,7 @@
     "assert": ">=0.0.1",
     "mocha-jshint": ">=0.0.1",
     "mlcl_elastic": ">=0.6.2",
-    "mlcl_elements": ">=0.3.2",
+    "mlcl_elements": "0.4.3",
     "mlcl_database": ">=0.0.1"
   },
   "scripts": {
