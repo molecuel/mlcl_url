@@ -10,7 +10,7 @@
   "devDependencies": {
     "mocha": "*",
     "should": ">= 0.0.1",
-    "supertest": ">=0.0.1",
+    "supertest": ">=4.0.1",
     "assert": ">=0.0.1",
     "mocha-jshint": ">=0.0.1",
     "mlcl_elastic": ">=0.6.2",
