@@ -11,7 +11,7 @@
     "mocha": "*",
     "should": ">= 0.0.1",
     "supertest": ">=0.0.1",
-    "assert": ">=0.0.1",
+    "assert": "1.4.1",
     "mocha-jshint": ">=0.0.1",
     "mlcl_elastic": ">=0.6.2",
     "mlcl_elements": ">=0.3.2",
